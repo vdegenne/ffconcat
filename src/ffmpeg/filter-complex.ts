@@ -3,21 +3,30 @@ import {type VideosManager} from '../VideosManager.js'
 import {ffmpeg} from './ffmpeg.js'
 
 let index = 0
-const videoFilter =
+const filterTemplate =
+	// video
 	`[{I}:v]scale={WIDTH}:{HEIGHT}:force_original_aspect_ratio=decrease,setsar=1,format=yuv420p[vid{I}];` +
+	// black background for borders
 	`color=c=black:s={WIDTH}x{HEIGHT}:d={DURATION}[bg{I}];` +
-	`[bg{I}][vid{I}]overlay=(W-w)/2:(H-h)/2[v{I}]`
-function createVideoFilter(info: FFmpegInfo) {
-	const filter = videoFilter.replaceAll('{I}', index+'')
-	...
+	// assemble
+	`[bg{I}][vid{I}]overlay=(W-w)/2:(H-h)/2[v{I}];` +
+	// audio
+	`[{I}:a]aformat=sample_fmts=fltp:sample_rates=48000:channel_layouts=stereo[a{I}]`
+
+function createFilter(info: FFmpegInfo) {
+	const filter = filterTemplate
+		.replaceAll('{I}', index + '')
+		.replaceAll('{WIDTH}', info.dimensions[0] + '')
+		.replaceAll('{HEIGHT}', info.dimensions[1] + '')
+		.replaceAll('{DURATION}', info.duration + '')
 	index++
-		return filter
+	return filter
 }
 
 /**
  * (recommended)
- * Uses ffmpeg `-filter_complex` option to concatenate all files without making reencoded temp files.
- * It will decode all input videos, and use `-filter_complex` (`-vf`) to create a final matrix, then encode it using the given codecs.
+ * Uses ffmpeg -filter_complex option to concatenate all files without making reencoded temp files.
+ * It will decode all input videos, and use -filter_complex (-vf) to create a final matrix, then encode it using the given codecs.
  * This works great because it will scale smaller videos to fit the greatest dimension and add black borders around.
  */
 export async function filterComplex(
@@ -28,40 +37,34 @@ export async function filterComplex(
 		await manager.load()
 	}
 
-	// Get the highest resolution among videos
 	const highestVideo = await manager.getHighestDimensionVideo()
 	const [width, height] = (await highestVideo!.info()).dimensions
 
-	// Get all videos to concatenate
 	const videos = await manager.filter(() => true)
-	if (videos.length === 0) throw new Error('No videos to process')
+	if (!videos.length) throw new Error('No videos to process')
 
 	const inputs: string[] = []
 	const filters: string[] = []
 
-	for (let i = 0; i < videos.length; ++i) {
-		const video = videos[i]!
+	for (const video of videos) {
 		const info = await video.info()
 		inputs.push(`-i "${video.filepath}"`)
 
-		// Scale video to fit canvas, keep aspect ratio
+		// Generate video filter
 		filters.push(
-			`[${i}:v]scale=${width}:${height}:force_original_aspect_ratio=decrease,setsar=1,format=yuv420p[vid${i}];` +
-				`color=c=black:s=${width}x${height}:d=${info.duration}[bg${i}];` +
-				`[bg${i}][vid${i}]overlay=(W-w)/2:(H-h)/2[v${i}]`,
+			createFilter({
+				...info,
+				dimensions: [width, height],
+			}),
 		)
 
-		// Audio
-		if (info.audio) {
-			filters.push(
-				`[${i}:a]aformat=sample_fmts=fltp:sample_rates=48000:channel_layouts=stereo[a${i}]`,
-			)
-		} else {
-			filters.push(`aevalsrc=0:d=${info.duration}[a${i}]`)
+		// If no audio, insert silence (FFmpeg pads automatically)
+		if (!info.audio) {
+			filters.push(`aevalsrc=0:d=${info.duration}[a${index - 1}]`)
 		}
 	}
 
-	// Concat all videos and audios
+	// Concat all video & audio streams
 	const concatFilter = [
 		filters.join(';'),
 		`${videos.map((_, i) => `[v${i}][a${i}]`).join('')}concat=n=${videos.length}:v=1:a=1[outv][outa]`,
