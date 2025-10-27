@@ -91,7 +91,7 @@ export async function filterComplex(
 			createFilter(
 				{
 					...info,
-					dimensions: [width, height],
+					dimensions: [width, height], // always use the greatest dimensions
 				},
 				options.fade,
 			),

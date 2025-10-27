@@ -30,10 +30,10 @@ export function ffmpeg(
 		// Remove leading 'ffmpeg ' if it exists
 		let finalCommand = command.replace(/^ffmpeg\s+/, '')
 
-		// Prepend loglevel flags if verbose is false
 		if (_opts.print) {
 			_opts.verbose = true
 		}
+		// Prepend loglevel flags if verbose is false
 		if (!_opts.verbose) {
 			finalCommand = `-hide_banner -loglevel error ${finalCommand}`
 		}
