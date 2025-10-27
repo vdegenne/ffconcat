@@ -30,6 +30,8 @@ declare global {
 		debug: boolean
 		/** @default false */
 		verbose: boolean
+		/** @default false */
+		print: boolean
 	}
 
 	interface FFmpegInfo {

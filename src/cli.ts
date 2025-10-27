@@ -27,6 +27,7 @@ program
 	)
 	.option('-o, --output <file>', 'Output file', 'output.mp4')
 	.option('--yes', 'Force overwriting existing files', false)
+	.option('--print', 'Print the ffmpeg command instead of running', false)
 	.option('--debug', 'Output debug information', false)
 	.option('--verbose', 'Show ffmpeg output or not', false)
 	// .option('--reencode', 'Force re-encoding even if formats match')
@@ -48,6 +49,8 @@ program
 
 		// remove the output from the list of files
 		files = files.filter((f) => f !== options.output)
+
+		if (!files.length) throw new Error('No files to work with')
 
 		const manager = new VideosManager(files, {debug})
 
