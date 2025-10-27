@@ -2,13 +2,27 @@ import {ensureOverwrite} from '../utils.js'
 import {type VideosManager} from '../VideosManager.js'
 import {ffmpeg} from './ffmpeg.js'
 
-let index = 0
-
 const TEMPLATES = {
 	video:
+		// video
 		'[{I}:v]scale={WIDTH}:{HEIGHT}:force_original_aspect_ratio=decrease,setsar=1,format=yuv420p[vid{I}];' +
+		// black background
 		'color=c=black:s={WIDTH}x{HEIGHT}:d={DURATION}[bg{I}];' +
+		// assemble
 		'[bg{I}][vid{I}]overlay=(W-w)/2:(H-h)/2[v{I}];' +
+		// audio
+		'{AUDIO}',
+
+	videoFade:
+		// video
+		'[{I}:v]scale={WIDTH}:{HEIGHT}:force_original_aspect_ratio=decrease,setsar=1,format=yuv420p[vid{I}];' +
+		// black background
+		'color=c=black:s={WIDTH}x{HEIGHT}:d={DURATION}[bg{I}];' +
+		// assemble
+		'[bg{I}][vid{I}]overlay=(W-w)/2:(H-h)/2[vid_over{I}];' +
+		// fade
+		'[vid_over{I}]fade=t=in:st=0:d={FADEIN},fade=t=out:st={FADEOUTSTARTOUT}:d={FADEOUT}[v{I}];' +
+		// audio
 		'{AUDIO}',
 
 	audio:
@@ -19,20 +33,34 @@ const TEMPLATES = {
 	concat: '{LIST}concat=n={SIZE}:v=1:a=1[outv][outa]',
 }
 
-function createFilter(info: FFmpegInfo) {
+let index = 0
+
+function createFilter(info: FFmpegInfo, fade?: number) {
+	// audio
 	const atemplate = info.audio ? TEMPLATES.audio : TEMPLATES.silence
 	const afilter = atemplate
 		.replaceAll('{I}', index + '')
 		.replaceAll('{DURATION}', info.duration + '')
 
-	const vfilter = TEMPLATES.video
+	// video
+	const vtemplate = fade !== undefined ? TEMPLATES.videoFade : TEMPLATES.video
+	let vfilter = vtemplate
 		.replaceAll('{I}', index + '')
 		.replaceAll('{WIDTH}', info.dimensions[0] + '')
 		.replaceAll('{HEIGHT}', info.dimensions[1] + '')
 		.replaceAll('{DURATION}', info.duration + '')
-		.replaceAll('{AUDIO}', afilter)
+
+	if (fade) {
+		vfilter = vfilter
+			.replaceAll('{FADEIN}', fade + '')
+			.replaceAll('{FADEOUTSTARTOUT}', info.duration - fade + '')
+			.replaceAll('{FADEOUT}', fade + '')
+	}
+
+	vfilter = vfilter.replaceAll('{AUDIO}', afilter)
 
 	index++
+
 	return vfilter
 }
 
@@ -60,10 +88,13 @@ export async function filterComplex(
 		inputs.push(`-i "${video.filepath}"`)
 
 		filters.push(
-			createFilter({
-				...info,
-				dimensions: [width, height],
-			}),
+			createFilter(
+				{
+					...info,
+					dimensions: [width, height],
+				},
+				options.fade,
+			),
 		)
 	}
 
@@ -79,7 +110,7 @@ export async function filterComplex(
 		'-map [outv]',
 		'-map [outa]',
 		'-c:v libx264',
-		'-preset ultrafast',
+		`-preset ${options.preset}`,
 		'-crf 23',
 		'-pix_fmt yuv420p',
 		'-c:a aac',

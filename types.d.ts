@@ -9,14 +9,26 @@ declare global {
 			? true
 			: ['❌ Missing values', Exclude<T, U[number]>]
 
+	export type FFmpegPreset =
+		| 'ultrafast'
+		| 'superfast'
+		| 'veryfast'
+		| 'faster'
+		| 'fast'
+		| 'medium'
+		| 'slow'
+		| 'slower'
+		| 'veryslow'
+		| 'placebo'
+
 	type ConcatMode =
+		| 'demux-copy' // Demux all files in one using copy (default)
 		/**
 		 * Use ffmpeg `-filter_complex` option to concatenate all files without making reencoding temp files.
 		 */
-		| 'filter-complex'
-		| 'demux-copy' // Demux all files in one using copy (default)
-		| 'demux-reenc' // Demux all files in one and reencode
-		| 'reenc-demux-copy' // Reencode each file, demux them in one using copy
+		| 'filter'
+	// | 'demux-reenc' // Demux all files in one and reencode
+	// | 'reenc-demux-copy' // Reencode each file, demux them in one using copy
 
 	interface CommandOptions {
 		output: string
@@ -32,6 +44,11 @@ declare global {
 		verbose: boolean
 		/** @default false */
 		print: boolean
+
+		/** @default fast */
+		preset: FFmpegPreset
+
+		fade?: number
 	}
 
 	interface FFmpegInfo {

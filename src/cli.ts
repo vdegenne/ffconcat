@@ -1,7 +1,7 @@
 import {Logger} from '@vdegenne/debug'
 import chalk from 'chalk'
 import {Command} from 'commander'
-import {MODES} from './constants.js'
+import {MODES, PRESETS} from './constants.js'
 import {demuxCopy} from './ffmpeg/demux-copy.js'
 import {demuxReenc} from './ffmpeg/demux-reenc.js'
 import {getAllVideoFiles} from './utils.js'
@@ -25,7 +25,17 @@ program
 		`Concatenation mode (${MODES.join(', ')})`,
 		<ConcatMode>'demux-copy',
 	)
-	.option('-o, --output <file>', 'Output file', 'output.mp4')
+	.option(
+		'-f, --fade [value]',
+		'fade value in seconds between clips (only works in "filter" mode)',
+		parseFloat,
+	)
+	.option('-o, --output <file>', 'Output file', 'concat.mp4')
+	.option(
+		'-p, --preset',
+		`Preset to use when ffmpeg reencode (${PRESETS.join(', ')})`,
+		<FFmpegPreset>'fast',
+	)
 	.option('--yes', 'Force overwriting existing files', false)
 	.option('--print', 'Print the ffmpeg command instead of running', false)
 	.option('--debug', 'Output debug information', false)
@@ -33,10 +43,18 @@ program
 	// .option('--reencode', 'Force re-encoding even if formats match')
 	.argument('[files...]', 'Input files to concatenate (optional)')
 	.action(async function (files: string[], options: CommandOptions) {
-		const {debug, mode} = options
+		if (options.fade !== undefined && typeof options.fade === 'boolean') {
+			options.fade = 0.5 // default for fade
+		}
 
-		if (!MODES.includes(mode)) {
-			logger.error(`Invalid mode: ${mode}`)
+		if (!MODES.includes(options.mode)) {
+			logger.error(`Invalid mode: ${options.mode}`)
+			logger.error(`Available: ${MODES.join(', ')}`)
+			process.exit(1)
+		}
+		if (!PRESETS.includes(options.preset)) {
+			logger.error(`Invalid preset: ${options.preset}`)
+			logger.error(`Available: ${PRESETS.join(', ')}`)
 			process.exit(1)
 		}
 
@@ -52,7 +70,7 @@ program
 
 		if (!files.length) throw new Error('No files to work with')
 
-		const manager = new VideosManager(files, {debug})
+		const manager = new VideosManager(files, {debug: options.debug})
 
 		switch (options.mode) {
 			case 'demux-copy':
@@ -61,17 +79,17 @@ program
 				} catch (err) {}
 				break
 
-			case 'demux-reenc':
-				try {
-					await demuxReenc(manager, options)
-				} catch (err) {}
-				break
+			// case 'demux-reenc':
+			// 	try {
+			// 		await demuxReenc(manager, options)
+			// 	} catch (err) {}
+			// 	break
+			//
+			// case 'reenc-demux-copy':
+			// 	// I will try later
+			// 	break
 
-			case 'reenc-demux-copy':
-				// I will try later
-				break
-
-			case 'filter-complex':
+			case 'filter':
 				await filterComplex(manager, options)
 				break
 		}
