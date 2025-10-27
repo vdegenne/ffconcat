@@ -10,7 +10,10 @@ declare global {
 			: ['❌ Missing values', Exclude<T, U[number]>]
 
 	type ConcatMode =
-		| 'filter-complex' // Use ffmpeg `-filter_complex` option
+		/**
+		 * Use ffmpeg `-filter_complex` option to concatenate all files without making reencoding temp files.
+		 */
+		| 'filter-complex'
 		| 'demux-copy' // Demux all files in one using copy (default)
 		| 'demux-reenc' // Demux all files in one and reencode
 		| 'reenc-demux-copy' // Reencode each file, demux them in one using copy

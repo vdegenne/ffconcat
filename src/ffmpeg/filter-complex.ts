@@ -2,6 +2,24 @@ import {ensureOverwrite} from '../utils.js'
 import {type VideosManager} from '../VideosManager.js'
 import {ffmpeg} from './ffmpeg.js'
 
+let index = 0
+const videoFilter =
+	`[{I}:v]scale={WIDTH}:{HEIGHT}:force_original_aspect_ratio=decrease,setsar=1,format=yuv420p[vid{I}];` +
+	`color=c=black:s={WIDTH}x{HEIGHT}:d={DURATION}[bg{I}];` +
+	`[bg{I}][vid{I}]overlay=(W-w)/2:(H-h)/2[v{I}]`
+function createVideoFilter(info: FFmpegInfo) {
+	const filter = videoFilter.replaceAll('{I}', index+'')
+	...
+	index++
+		return filter
+}
+
+/**
+ * (recommended)
+ * Uses ffmpeg `-filter_complex` option to concatenate all files without making reencoded temp files.
+ * It will decode all input videos, and use `-filter_complex` (`-vf`) to create a final matrix, then encode it using the given codecs.
+ * This works great because it will scale smaller videos to fit the greatest dimension and add black borders around.
+ */
 export async function filterComplex(
 	manager: VideosManager,
 	options: CommandOptions,
@@ -22,9 +40,9 @@ export async function filterComplex(
 	const filters: string[] = []
 
 	for (let i = 0; i < videos.length; ++i) {
-		const v = videos[i]!
-		const info = await v.info()
-		inputs.push(`-i "${v.filepath}"`)
+		const video = videos[i]!
+		const info = await video.info()
+		inputs.push(`-i "${video.filepath}"`)
 
 		// Scale video to fit canvas, keep aspect ratio
 		filters.push(
