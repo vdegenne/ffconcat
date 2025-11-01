@@ -1,14 +1,4 @@
 declare global {
-	type AllKeysPresent<T, U extends readonly (keyof T)[]> =
-		Exclude<keyof T, U[number]> extends never
-			? true
-			: ['❌ Missing keys', Exclude<keyof T, U[number]>]
-
-	type AllValuesPresent<T, U extends readonly T[]> =
-		Exclude<T, U[number]> extends never
-			? true
-			: ['❌ Missing values', Exclude<T, U[number]>]
-
 	export type FFmpegPreset =
 		| 'ultrafast'
 		| 'superfast'
@@ -30,10 +20,10 @@ declare global {
 	// | 'demux-reenc' // Demux all files in one and reencode
 	// | 'reenc-demux-copy' // Reencode each file, demux them in one using copy
 
-	interface CommandOptions {
+	interface SharedOptions {
+		/** @default fast */
+		preset: FFmpegPreset
 		output: string
-		reencode?: boolean
-		mode: ConcatMode
 		/**
 		 * If yes option is provided, force and overwrite existing files
 		 * @default false
@@ -44,12 +34,15 @@ declare global {
 		verbose: boolean
 		/** @default false */
 		print: boolean
+	}
 
-		/** @default fast */
-		preset: FFmpegPreset
-
+	interface ConcatOptions extends SharedOptions {
+		reencode?: boolean
+		mode: ConcatMode
 		fade?: number
 	}
+
+	interface OverlayOptions extends SharedOptions {}
 
 	interface FFmpegInfo {
 		dimensions: [number, number]

@@ -1,11 +1,11 @@
-import {TEMP_CONCAT_DEMUXER_FILENAME} from '../constants.js'
-import {ensureOverwrite} from '../utils.js'
-import {type VideosManager} from '../VideosManager.js'
-import {ffmpeg} from './ffmpeg.js'
+import {TEMP_CONCAT_DEMUXER_FILENAME} from '../../constants.js'
+import {ensureOverwrite} from '../../utils.js'
+import {VideosManager} from '../../VideosManager.js'
+import {ffmpeg} from '../ffmpeg.js'
 
 export async function demuxReenc(
 	manager: VideosManager,
-	options: CommandOptions,
+	options: ConcatOptions,
 ): Promise<void> {
 	if (options.debug) {
 		await manager.load()

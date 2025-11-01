@@ -2,9 +2,12 @@ import readline from 'readline'
 import {access, constants, unlink} from 'fs/promises'
 import {readdirSync, statSync} from 'fs'
 import pathlib from 'path'
-import {VIDEO_EXTENSIONS} from './constants.js'
+import {IMAGE_EXTENSIONS, VIDEO_EXTENSIONS} from './constants.js'
 
-export function getAllVideoFiles(dir = '.'): string[] {
+export function getAllVideoFiles(
+	dir = '.',
+	sortDirection: 'desc' | 'asc' = 'asc',
+): string[] {
 	const entries = readdirSync(dir)
 	const videoFiles: string[] = []
 
@@ -12,13 +15,21 @@ export function getAllVideoFiles(dir = '.'): string[] {
 		const fullPath = pathlib.join(dir, entry)
 		const stats = statSync(fullPath)
 
+		const extension = pathlib.extname(entry).toLowerCase()
 		if (
 			stats.isFile() &&
-			VIDEO_EXTENSIONS.includes(pathlib.extname(entry).toLowerCase())
+			(VIDEO_EXTENSIONS.includes(extension) ||
+				IMAGE_EXTENSIONS.includes(extension))
 		) {
 			videoFiles.push(fullPath)
 		}
 	}
+
+	// sort by modification time
+	videoFiles.sort((a, b) => {
+		const diff = statSync(b).mtimeMs - statSync(a).mtimeMs
+		return sortDirection === 'desc' ? diff : -diff
+	})
 
 	return videoFiles
 }

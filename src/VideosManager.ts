@@ -1,9 +1,14 @@
+import {Logger} from '@vdegenne/debug'
+import chalk from 'chalk'
 import {writeFile} from 'fs/promises'
 import {TEMP_CONCAT_DEMUXER_FILENAME} from './constants.js'
-import {mainLogger} from './mainLogger.js'
 import {Video} from './Video.js'
-import {ensureOverwrite} from './utils.js'
-import chalk from 'chalk'
+
+const logger = new Logger({
+	force: true,
+	color: chalk.blueBright,
+	errorColor: chalk.red,
+})
 
 interface VideosManagerOptions {
 	/** @default false */
@@ -23,7 +28,7 @@ export class VideosManager {
 	}
 
 	constructor(filepaths: string[], options?: Partial<VideosManagerOptions>) {
-		mainLogger.log('Creation')
+		logger.log('constructing manager')
 		this.#options = {
 			preload: false,
 			debug: false,
@@ -43,10 +48,10 @@ export class VideosManager {
 				this.#videos.map((v) => v.info()),
 			).then((infos) => {
 				const duration = Date.now() - start
-				mainLogger.log(`Loaded ${this.#videos.length} videos in ${duration}ms`)
+				logger.log(`Loaded ${this.#videos.length} videos in ${duration}ms`)
 				if (this.#options.debug) {
 					this.#videos.forEach(async (v, i) => {
-						mainLogger.log(
+						logger.log(
 							`[#${i}] ${v.filepath} (${JSON.stringify(await v.info())})`,
 						)
 					})
@@ -120,7 +125,7 @@ export class VideosManager {
 
 		await writeFile(TEMP_CONCAT_DEMUXER_FILENAME, lines.join('\n'), 'utf-8')
 
-		mainLogger.log(`"${TEMP_CONCAT_DEMUXER_FILENAME}" created`)
+		logger.log(`"${TEMP_CONCAT_DEMUXER_FILENAME}" created`)
 
 		return TEMP_CONCAT_DEMUXER_FILENAME
 	}
@@ -146,7 +151,7 @@ export class VideosManager {
 			const minutes = Math.floor((totalSeconds % 3600) / 60)
 			const seconds = Math.floor(totalSeconds % 60)
 			const formattedDuration = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`
-			mainLogger.log(
+			logger.log(
 				chalk.cyan(
 					`[filter] ${result.length} videos, total duration: ${formattedDuration}`,
 				),

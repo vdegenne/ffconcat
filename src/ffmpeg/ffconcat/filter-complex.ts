@@ -1,9 +1,9 @@
-import {ensureOverwrite} from '../utils.js'
-import {type VideosManager} from '../VideosManager.js'
-import {ffmpeg} from './ffmpeg.js'
+import {ensureOverwrite} from '../../utils.js'
+import {VideosManager} from '../../VideosManager.js'
+import {ffmpeg} from '../ffmpeg.js'
 
-const TEMPLATES = {
-	video:
+const Template = {
+	VIDEO:
 		// video
 		'[{I}:v]scale={WIDTH}:{HEIGHT}:force_original_aspect_ratio=decrease,setsar=1,format=yuv420p[vid{I}];' +
 		// black background
@@ -13,7 +13,7 @@ const TEMPLATES = {
 		// audio
 		'{AUDIO}',
 
-	videoFade:
+	VIDEO_FADE:
 		// video
 		'[{I}:v]scale={WIDTH}:{HEIGHT}:force_original_aspect_ratio=decrease,setsar=1,format=yuv420p[vid{I}];' +
 		// black background
@@ -25,25 +25,25 @@ const TEMPLATES = {
 		// audio
 		'{AUDIO}',
 
-	audio:
+	AUDIO:
 		'[{I}:a]aformat=sample_fmts=fltp:sample_rates=48000:channel_layouts=stereo[a{I}]',
 
-	silence: 'aevalsrc=0:d={DURATION}[a{I}]',
+	SILENCE: 'aevalsrc=0:d={DURATION}[a{I}]',
 
-	concat: '{LIST}concat=n={SIZE}:v=1:a=1[outv][outa]',
+	CONCAT: '{LIST}concat=n={SIZE}:v=1:a=1[outv][outa]',
 }
 
 let index = 0
 
 function createFilter(info: FFmpegInfo, fade?: number) {
 	// audio
-	const atemplate = info.audio ? TEMPLATES.audio : TEMPLATES.silence
+	const atemplate = info.audio ? Template.AUDIO : Template.SILENCE
 	const afilter = atemplate
 		.replaceAll('{I}', index + '')
 		.replaceAll('{DURATION}', info.duration + '')
 
 	// video
-	const vtemplate = fade !== undefined ? TEMPLATES.videoFade : TEMPLATES.video
+	const vtemplate = fade !== undefined ? Template.VIDEO_FADE : Template.VIDEO
 	let vfilter = vtemplate
 		.replaceAll('{I}', index + '')
 		.replaceAll('{WIDTH}', info.dimensions[0] + '')
@@ -70,9 +70,9 @@ function createFilter(info: FFmpegInfo, fade?: number) {
  * It will decode all input videos, and use `-filter_complex` (`-vf`) to create a final matrix, then encode it using the given codecs.
  * This works great because it will scale smaller videos to fit the greatest dimension and add black borders around.
  */
-export async function filterComplex(
+export async function concatFilterComplex(
 	manager: VideosManager,
-	options: CommandOptions,
+	options: ConcatOptions,
 ): Promise<void> {
 	const highestVideo = await manager.getHighestDimensionVideo()
 	const [width, height] = (await highestVideo!.info()).dimensions
@@ -98,9 +98,10 @@ export async function filterComplex(
 		)
 	}
 
-	const concatFilter = TEMPLATES.concat
-		.replaceAll('{LIST}', videos.map((_, i) => `[v${i}][a${i}]`).join(''))
-		.replaceAll('{SIZE}', videos.length + '')
+	const concatFilter = Template.CONCAT.replaceAll(
+		'{LIST}',
+		videos.map((_, i) => `[v${i}][a${i}]`).join(''),
+	).replaceAll('{SIZE}', videos.length + '')
 
 	const finalConcatFilter = `${filters.join(';')};${concatFilter}`
 

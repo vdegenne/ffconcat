@@ -1,3 +1,3 @@
 import {Logger} from '@vdegenne/debug'
 
-export const mainLogger = new Logger({alwaysLog: true})
+export const mainLogger = new Logger({prefix: 'FFTOOLS', force: true})

@@ -1,4 +1,5 @@
 export const VIDEO_EXTENSIONS = ['.mp4', '.webm', '.mkv']
+export const IMAGE_EXTENSIONS = ['.gif', '.png']
 export const TEMP_DIRECTORY_NAME = 'reencoded_clips'
 export const TEMP_CONCAT_DEMUXER_FILENAME = 'list.txt'
 
@@ -8,7 +9,7 @@ export const MODES = [
 	// 'demux-reenc',
 	// 'reenc-demux-copy',
 ] as const
-true as AllValuesPresent<ConcatMode, typeof MODES>
+// true as AllValuesPresent<ConcatMode, typeof MODES>
 
 export const PRESETS = [
 	'ultrafast',
@@ -22,4 +23,4 @@ export const PRESETS = [
 	'veryslow',
 	'placebo',
 ] as const
-true as AllValuesPresent<FFmpegPreset, typeof PRESETS>
+// true as AllValuesPresent<FFmpegPreset, typeof PRESETS>

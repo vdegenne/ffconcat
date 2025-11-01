@@ -2,7 +2,7 @@ import {Logger} from '@vdegenne/debug'
 import chalk from 'chalk'
 import {spawn} from 'node:child_process'
 
-const logger = new Logger({color: chalk.blue, alwaysLog: true})
+const logger = new Logger({color: chalk.blue, force: true})
 
 interface FFmpegOptions {
 	/** @default false */

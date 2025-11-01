@@ -1,15 +1,14 @@
 import {Logger} from '@vdegenne/debug'
 import chalk from 'chalk'
 import {Command} from 'commander'
-import {MODES, PRESETS} from './constants.js'
-import {demuxCopy} from './ffmpeg/demux-copy.js'
-import {demuxReenc} from './ffmpeg/demux-reenc.js'
-import {getAllVideoFiles} from './utils.js'
-import {VideosManager} from './VideosManager.js'
-import {filterComplex} from './ffmpeg/filter-complex.js'
+import {MODES, PRESETS} from '../constants.js'
+import {getAllVideoFiles} from '../utils.js'
+import {VideosManager} from '../VideosManager.js'
+import {demuxCopy} from '../ffmpeg/ffconcat/demux-copy.js'
+import {concatFilterComplex} from '../ffmpeg/ffconcat/filter-complex.js'
 
 const logger = new Logger({
-	alwaysLog: true,
+	force: true,
 	color: chalk.yellow,
 	errorColor: chalk.red,
 })
@@ -32,7 +31,7 @@ program
 	)
 	.option('-o, --output <file>', 'Output file', 'concat.mp4')
 	.option(
-		'-p, --preset',
+		'-p, --preset <preset>',
 		`Preset to use when ffmpeg reencode (${PRESETS.join(', ')})`,
 		<FFmpegPreset>'fast',
 	)
@@ -42,7 +41,7 @@ program
 	.option('--verbose', 'Show ffmpeg output or not', false)
 	// .option('--reencode', 'Force re-encoding even if formats match')
 	.argument('[files...]', 'Input files to concatenate (optional)')
-	.action(async function (files: string[], options: CommandOptions) {
+	.action(async function (files: string[], options: ConcatOptions) {
 		if (options.fade !== undefined && typeof options.fade === 'boolean') {
 			options.fade = 0.5 // default for fade
 		}
@@ -90,12 +89,9 @@ program
 			// 	break
 
 			case 'filter':
-				await filterComplex(manager, options)
+				await concatFilterComplex(manager, options)
 				break
 		}
-
-		// const highestVideo = (await manager.getHighestDimensionVideo())!
-		// const highestDimensions = (await highestVideo.info()).dimensions
 	})
 
 program.parse(process.argv)

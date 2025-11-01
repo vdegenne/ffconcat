@@ -1,23 +1,28 @@
 {
-	"name": "ffconcat",
+	"name": "fftools",
 	"version": "0.1.0",
 	"description": "",
 	"type": "module",
-	"bin": "./bin/ffconcat",
-	"files": [],
+	"bin": {
+		"ffconcat": "./bin/ffconcat",
+		"ffover": "./bin/ffover"
+	},
+	"files": [
+		"./lib"
+	],
 	"scripts": {
 		"build": "wireit"
 	},
 	"devDependencies": {
 		"@types/fluent-ffmpeg": "^2.1.28",
-		"@types/node": "^24.9.1",
+		"@types/node": "^24.9.2",
+		"@vdegenne/debug": "file:../debug",
 		"typescript": "^5.9.3",
 		"wireit": "^0.14.12"
 	},
 	"wireit": {
 		"build": {
 			"command": "tsc --pretty",
-			"clean": "if-file-deleted",
 			"files": [
 				"./tsconfig.json",
 				"./src"
@@ -28,7 +33,6 @@
 		}
 	},
 	"dependencies": {
-		"@vdegenne/debug": "^0.1.13",
 		"chalk": "^5.6.2",
 		"commander": "^14.0.2",
 		"fluent-ffmpeg": "^2.1.3"

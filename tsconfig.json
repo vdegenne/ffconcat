@@ -8,9 +8,9 @@
 		"experimentalDecorators": true,
 		"noUncheckedIndexedAccess": true,
 		"outDir": "./lib",
-		"declaration": true,
-		"declarationMap": true,
-		"sourceMap": true,
+		"declaration": false,
+		"declarationMap": false,
+		"sourceMap": false,
 		"types": ["node"]
 	}
 }
